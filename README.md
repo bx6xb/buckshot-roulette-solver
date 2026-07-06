@@ -1,6 +1,6 @@
 # Buckshot Roulette Solver
 
-### [⬇ Download the latest build](releases/latest)
+### [⬇ Download the latest build](https://github.com/bx6xb/buckshot-roulette-solver/releases/latest)
 
 ---
 
@@ -68,7 +68,7 @@ hover state.
 
 > Detection isn't perfect 100% of the time. If a scan reads something
 > wrong, take a screenshot of that moment in-game and open an
-> [issue](issues) with it.
+> [issue](https://github.com/bx6xb/buckshot-roulette-solver/issues) with it.
 
 **Windows only** — the click-through/transparency layer is built on the
 Windows API, so it won't run on macOS or Linux.

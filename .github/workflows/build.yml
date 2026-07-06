@@ -34,8 +34,24 @@ jobs:
           body: |
             Automatically built from the latest commit on main.
 
-            **Windows may show a "Windows protected your PC" / unknown publisher
-            warning** — that's normal for a small unsigned indie tool, not a sign
-            of malware. Click "More info" → "Run anyway".
+            **Windows will complain about an unsigned indie exe — that's
+            expected, not malware.** Depending on where it stops you
+            (Windows 10 and 11):
+
+            1. **Simplest fix for most cases**: right-click the downloaded
+               exe → **Properties** → tick **Unblock** at the bottom → OK.
+            2. **Browser blocks the download** (Edge/Chrome: "isn't commonly
+               downloaded") — open the downloads list, click the entry →
+               **Keep** → **Keep anyway**.
+            3. **"Windows protected your PC" (SmartScreen)** on launch —
+               click **More info** → **Run anyway**.
+            4. **Defender quarantines the file** — open **Windows Security →
+               Virus & threat protection → Protection history**, find the
+               blocked item and choose **Restore / Allow**. Or add the folder
+               to exclusions: **Virus & threat protection → Manage settings →
+               Exclusions → Add folder**.
+
+            Don't want to trust a random exe? Fair — the source is open,
+            build it yourself: see "Building it yourself" in the README.
           files: dist/BuckshotOverlay.exe
           prerelease: false
