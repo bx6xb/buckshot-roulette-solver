@@ -57,7 +57,7 @@ ITEMS_CONF = [
 TASKS_INIT = []
 
 MAX_HP      = 6
-MAX_BULLETS = 5
+MAX_BULLETS = 4   # the DoN loader never puts more than 4 of one type in a load
 MAX_ITEMS   = 8
 
 # ─────────────────────────────────────────────── Palette ─────────────────────
@@ -83,6 +83,8 @@ C = {
     "btn_bg":     "#111120",
     "btn_brd":    "#2A2A40",
     "btn_text":   "#8A8A7A",
+    "amber":      "#7A5A14",
+    "amber_hi":   "#C89A28",
 }
 
 F      = ("Courier New", 20)
@@ -166,7 +168,9 @@ class BuckshotOverlay:
         self.live_shells        = 0
         self.blank_shells       = 0
         self.shell_sequence     = []       # 0=unknown, 1=live, 2=blank
-        self.dealer_cuffed      = False
+        # 0 = off, 1 = CUFFED (dealer's next turn will be skipped),
+        # 2 = COOLDOWN (skip consumed, re-cuffing not allowed yet).
+        self.cuff_state         = 0
         self.saw_active         = False
         self.tasks              = [{"text": t, "done": False} for t in TASKS_INIT]
         self.max_hp_round       = 4
@@ -636,24 +640,33 @@ class BuckshotOverlay:
         self._t((bx1 + x2) // 2, (by1 + y2) // 2,
                 str(count), col, F_NUM, anchor="center")
 
-    # ── Status toggles (cuffs / saw) ────────────────────────────────────────────
+    # ── Status toggles (saw / 3-state dealer cuffs) ─────────────────────────────
     def _draw_status_toggles(self):
-        labels  = ("SAW", "D CUFF")
-        actives = (self.saw_active, self.dealer_cuffed)
-        colors  = (C["green"], C["red"])
-        hi_cols = (C["green_hi"], C["red_hi"])
-        for i, (zone, lbl, on, col, hi) in enumerate(
-            zip(self.toggle_zones, labels, actives, colors, hi_cols)
-        ):
-            zx1, zy1, zx2, zy2 = zone
-            if on:
-                self._r(zx1, zy1, zx2, zy2, fill=col, outline=hi)
-                self._t((zx1+zx2)//2, (zy1+zy2)//2, lbl, C["text_hi"],
-                        F_HDR, anchor="center")
-            else:
-                self._r(zx1, zy1, zx2, zy2, fill=C["bg"], outline=C["border"])
-                self._t((zx1+zx2)//2, (zy1+zy2)//2, lbl, C["text_dim"],
-                        F_HDR, anchor="center")
+        # SAW toggle
+        zx1, zy1, zx2, zy2 = self.toggle_zones[0]
+        if self.saw_active:
+            self._r(zx1, zy1, zx2, zy2, fill=C["green"], outline=C["green_hi"])
+            self._t((zx1+zx2)//2, (zy1+zy2)//2, "SAW", C["text_hi"],
+                    F_HDR, anchor="center")
+        else:
+            self._r(zx1, zy1, zx2, zy2, fill=C["bg"], outline=C["border"])
+            self._t((zx1+zx2)//2, (zy1+zy2)//2, "SAW", C["text_dim"],
+                    F_HDR, anchor="center")
+
+        # D CUFF cycles OFF -> CUFFED -> COOLDOWN -> OFF (manual only)
+        zx1, zy1, zx2, zy2 = self.toggle_zones[1]
+        if self.cuff_state == 1:
+            self._r(zx1, zy1, zx2, zy2, fill=C["red"], outline=C["red_hi"])
+            self._t((zx1+zx2)//2, (zy1+zy2)//2, "CUFFED", C["text_hi"],
+                    F_HDR, anchor="center")
+        elif self.cuff_state == 2:
+            self._r(zx1, zy1, zx2, zy2, fill=C["amber"], outline=C["amber_hi"])
+            self._t((zx1+zx2)//2, (zy1+zy2)//2, "NO CUFF", C["text_hi"],
+                    F_HDR, anchor="center")
+        else:
+            self._r(zx1, zy1, zx2, zy2, fill=C["bg"], outline=C["border"])
+            self._t((zx1+zx2)//2, (zy1+zy2)//2, "D CUFF", C["text_dim"],
+                    F_HDR, anchor="center")
 
     # ── Shell sequence panel ───────────────────────────────────────────────────
     def _draw_shell_sequence(self):
@@ -820,7 +833,7 @@ class BuckshotOverlay:
         self.live_shells   = 0
         self.blank_shells  = 0
         self.shell_sequence = []
-        self.dealer_cuffed = False
+        self.cuff_state    = 0
         self.saw_active    = False
         print("[RESET] State cleared — items/shells 0, player & dealer HP = MAX HP (4).")
         self.redraw()
@@ -842,7 +855,7 @@ class BuckshotOverlay:
                     self.blank_shells  = result["blank"]
                     total = result["live"] + result["blank"]
                     self.shell_sequence = [0] * total
-                    self.dealer_cuffed = False
+                    self.cuff_state    = 0   # all cuffs are removed at a reload
                     self.saw_active    = False
                     print(f"[SCAN]  live={result['live']}  blank={result['blank']}")
                 else:
@@ -866,13 +879,13 @@ class BuckshotOverlay:
         live   = self.live_shells
         blank  = self.blank_shells
         mhp    = self.max_hp_round
-        dc     = self.dealer_cuffed
+        cuffs  = self.cuff_state
         saw    = self.saw_active
 
         def _engine_worker():
             from ai_engine import run_ai
             tasks = run_ai(php, ehp, pitems, eitems, shells, live, blank, mhp,
-                           e_cuffed=dc, saw_active=saw)
+                           saw_active=saw, cuff_state=cuffs)
 
             def _show_tasks():
                 self.tasks        = [{"text": t, "done": False} for t in tasks]
@@ -932,7 +945,7 @@ class BuckshotOverlay:
                     if i == 0:
                         self.saw_active = not self.saw_active
                     else:
-                        self.dealer_cuffed = not self.dealer_cuffed
+                        self.cuff_state = (self.cuff_state + 1) % 3
                     self.redraw(); return
 
         # Shell sequence slot cycling (left-click only)

@@ -6,8 +6,15 @@
 
 A screen overlay for Buckshot Roulette. It reads the game state through
 computer vision (live/blank shell counts, items, HP) and works out the
-mathematically optimal move with a full adversarial search — not a guess,
+mathematically optimal move with an exact game-tree solver — not a guess,
 the actual best play given everything currently known about the round.
+
+The opponent model is not an abstract "perfect dealer": it is a faithful
+port of the real dealer AI from the game's decompiled source
+(`DealerIntelligence.gd`), including its risky self-shots when blanks
+outnumber lives, its pill habits and its item quirks. The solver exploits
+all of it, maximises your chance to win the round, and among equally
+winning lines prefers the one that spends the fewest items.
 
 ![main](./assets/main.gif)
 
@@ -30,10 +37,12 @@ hover state.
 **Status toggles** (above the shell chamber)
 - **SAW** — turn on once you've used the saw on the current shot (doubles
   its damage), so the solver accounts for that on the next shot.
-- **D CUFF** — turn on the moment you handcuff the dealer, so the solver
-  knows you get two actions this turn instead of one. Turn it back off as
-  soon as you've used the first of those two actions — otherwise the
-  solver will keep assuming you have an extra action you no longer have.
+- **D CUFF** — three-state toggle, click to cycle. Set to **CUFFED** the
+  moment you handcuff the dealer (his next turn will be skipped). After
+  the shot that skipped his turn, set it to **NO CUFF** — you are on your
+  bonus turn, but re-cuffing is not allowed yet (the game forbids cuffing
+  twice in a row). Once the dealer has played a real turn, click back to
+  off. The plan steps remind you when to switch.
 
 **Shells**
 - **LIVE** / **BLANK** — left-click to increase the known count in the
