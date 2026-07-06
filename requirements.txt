@@ -1,0 +1,22 @@
+# ai-buckshot dependencies (packaged app — scanner.py + overlay.py + ai_engine.py)
+#   pip install -r requirements.txt
+#
+# CV inference runs through ONNX Runtime (CPU) against best.onnx, not the
+# training stack. To retrain the model (train.py, download_dataset.py) you
+# still need torch/torchvision/ultralytics installed separately (with CUDA
+# if you want GPU training) — those scripts aren't part of the shipped app.
+
+# --- YOLO inference (CPU) ---
+onnxruntime>=1.18.0
+
+# --- Screen capture ---
+mss>=9.0.0
+
+# --- Image handling (overlay UI + scanner preprocessing) ---
+Pillow>=10.3.0
+
+# --- Windows API ---
+pywin32>=306
+
+# --- Numerics ---
+numpy>=1.26.0
