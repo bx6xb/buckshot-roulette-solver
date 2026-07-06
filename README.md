@@ -4,6 +4,8 @@
 
 ---
 
+![main](./assets/main.gif)
+
 A screen overlay for Buckshot Roulette. It reads the game state through
 computer vision (live/blank shell counts, items, HP) and works out the
 mathematically optimal move with an exact game-tree solver — not a guess,
@@ -15,8 +17,6 @@ port of the real dealer AI from the game's decompiled source
 outnumber lives, its pill habits and its item quirks. The solver exploits
 all of it, maximises your chance to win the round, and among equally
 winning lines prefers the one that spends the fewest items.
-
-![main](./assets/main.gif)
 
 ## Usage
 
