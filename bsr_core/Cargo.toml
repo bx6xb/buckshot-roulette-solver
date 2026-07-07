@@ -1,0 +1,17 @@
+[package]
+name = "bsr_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bsr_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.26", features = ["extension-module", "abi3-py313"] }
+rustc-hash = "2"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1

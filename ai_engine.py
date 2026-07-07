@@ -42,6 +42,16 @@ import sys
 from itertools import combinations
 from typing import Dict, Iterable, List, NamedTuple, Tuple
 
+# ── Optional Rust core ────────────────────────────────────────────────────────
+# bsr_core is a faithful PyO3 port of the search below (same best actions,
+# same win probabilities to 1e-9 — enforced by tests/test_rust_parity.py).
+# When the compiled module is importable the search runs in Rust; otherwise
+# this file's pure-Python solver does the exact same job, only slower.
+try:
+    import bsr_core as _bsr
+except ImportError:                       # wheel not built/installed
+    _bsr = None
+
 # ── Item indices (must match ITEMS_CONF order in overlay.py) ─────────────────
 GLASS, PILLS, PHONE, CUFFS, ADRENALINE, SAW, CIGGS, BEER, INVERTER = range(9)
 
@@ -831,10 +841,39 @@ def _dealer_shoot(s: State, memo: dict, knows: bool, known: int,
 
 
 # ── Plan builder ──────────────────────────────────────────────────────────────
+def _rust_state_args(s: State) -> tuple:
+    """State -> plain-Python arguments for the bsr_core.Solver methods."""
+    return (s.php, s.ehp, s.max_hp, list(s.pitems), list(s.eitems),
+            [list(w) for w in s.worlds], list(s.mem),
+            s.saw, s.e_cuff, s.p_cuff)
+
+
+def _search_best_action(s: State, memo, d: int | None) -> Tuple[str, int, Value]:
+    """_best_action, dispatched to the Rust solver when `memo` is its
+    handle (the Solver keeps its own memo and horizon between calls)."""
+    if _bsr is not None and isinstance(memo, _bsr.Solver):
+        hit = memo.best_action(*_rust_state_args(s))
+        if hit is None:
+            raise _SearchOverflow
+        act, idx, p, tb = hit
+        return act, idx, (p, tb)
+    act, idx, val = _best_action(s, memo, d)
+    return act, idx, val
+
+
 def _plan_root_search(state: State):
     """Exact solve when it fits in memory; otherwise iterative deepening
     over consumed shells.  Returns (act, idx, value, memo, horizon) where
-    horizon is None for an exact result."""
+    horizon is None for an exact result and memo is either the Python dict
+    or the Rust Solver handle."""
+    if _bsr is not None and _shell_count(state) <= 8:
+        solver = _bsr.Solver()
+        hit = solver.root_search(*_rust_state_args(state))
+        if hit is None:
+            return None
+        act, idx, p, tb, horizon = hit
+        return act, idx, (p, tb), solver, horizon
+
     global _memo_cap
     huge = (len(state.worlds) >= FALLBACK_GATE_WORLDS
             and sum(state.pitems) + sum(state.eitems) >= FALLBACK_GATE_ITEMS)
@@ -940,7 +979,7 @@ def build_plan(state: State) -> List[str]:
 
         if step > 0:
             try:
-                act, idx, val = _best_action(cur, memo, horizon)
+                act, idx, val = _search_best_action(cur, memo, horizon)
             except _SearchOverflow:
                 break
         tasks.append(_fmt_action(act, idx, cur))

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "bsr_core"
+version = "0.1.0"
+description = "Rust search core for the Buckshot Roulette solver (faithful port of ai_engine.py)"
+requires-python = ">=3.13"
+
+[tool.maturin]
+# plain cdylib extension module, no python sources bundled

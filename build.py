@@ -43,6 +43,14 @@ args = [
     "--add-data=pics;pics",
     "--additional-hooks-dir=pyinstaller_hooks",
     "--noconfirm",
+    # Rust search core (optional at runtime, ai_engine falls back to pure
+    # Python without it).  The top-level `import bsr_core` sits in a
+    # try/except, so make the .pyd bundling explicit rather than trusting
+    # PyInstaller's optional-import heuristics.  Build/install it first:
+    #     pip install maturin
+    #     maturin build --release --manifest-path bsr_core/Cargo.toml --out wheels
+    #     pip install --force-reinstall --no-deps wheels/bsr_core-*.whl
+    "--hidden-import=bsr_core",
 ]
 for mod in EXCLUDES:
     args.append(f"--exclude-module={mod}")

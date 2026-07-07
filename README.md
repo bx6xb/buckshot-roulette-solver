@@ -20,6 +20,25 @@ winning lines prefers the one that spends the fewest items.
 
 ## Usage
 
+**The Tasks panel is your next move(s) — not a script for the whole
+round.** The solver does look ahead through everything (every dealer
+reply, every possible shell, item combos), but it only prints steps whose
+outcome is already certain. The moment a step's result depends on
+something not yet known — a magnifying-glass reveal, the phone, pills,
+a shot on an unknown shell, the dealer's move — the plan stops there and
+the last task tells you what to do: update the overlay with what actually
+happened and press **AI** again.
+
+So playing with the overlay is a loop:
+
+1. Press **AI** and do the step(s) it shows, in order.
+2. When the game reveals something new — a shell type, an HP change, the
+   dealer's move, fresh items — mark it in the overlay.
+3. Press **AI** again. Repeat until the round is over.
+
+A one-step plan is normal: it means the best follow-up depends on what
+that step reveals. The solver never assumes anything you haven't marked.
+
 Hover over the overlay to bring it to full opacity and interact with it —
 move your mouse away and it fades back to stay out of your way. The **AI**
 button, tasks and **X** (close) button are always fully visible regardless of
@@ -78,6 +97,13 @@ Windows API, so it won't run on macOS or Linux.
 ```bash
 pip install -r requirements.txt
 pip install pyinstaller
+
+# optional but recommended: the Rust search core (needs a Rust toolchain).
+# Without it the solver still works, just slower (pure Python fallback).
+pip install maturin
+maturin build --release --manifest-path bsr_core/Cargo.toml --out wheels
+pip install --no-index --find-links wheels bsr_core
+
 python build.py
 ```
 
